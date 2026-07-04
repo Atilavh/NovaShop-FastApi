@@ -7,9 +7,29 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from random import randint
 from datetime import datetime, timezone
+from fastapi import HTTPException, status
+
 
 # generate
 async def generate_otp(user: User, db: AsyncSession, redis: Redis):
+    cooldown = await redis.exists(f"otp_cooldown:{user.phone_number}")
+    if cooldown:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "error":True,
+                "detail":"Too many requests. Please try again later."
+            }
+        )
+    blocked = await redis.exists(f"otp_block:{user.phone_number}")
+    if blocked:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "error":True,
+                "detail":"Too many requests. Please try again later."
+            }
+        )
     stmt = select(OTP).where(OTP.user_id == user.id)
     result = await db.execute(stmt)
     existing_otp = result.scalars().first()
@@ -42,17 +62,51 @@ async def generate_otp(user: User, db: AsyncSession, redis: Redis):
         ex=60
     )
 
+    await redis.set(
+        f"otp_attempts:{user.phone_number}",
+        0,
+        ex=60,
+    )
+
+    await redis.set(
+        f"otp_cooldown:{user.phone_number}",
+        1,
+        ex=60,
+    )
     return random_code
 
 # verified
 async def  verified_otp(phone_number: str, input_otp: str, redis: Redis, db: AsyncSession):
     cached = await redis.get(f"otp:{phone_number}")
     if not cached:
-        return False
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error":True,
+                "detail":"Invalid or Expired OTP"
+            }
+        )
     data = json.loads(cached)
 
     if data["otp"] != input_otp:
-        return False
+        attempts = await redis.incr(f"otp_attempts:{phone_number}")
+        if attempts >= 5:
+            await redis.set(
+                f"otp_block:{phone_number}",
+                1,
+                ex=300,
+            )
+            await redis.delete(f"otp:{phone_number}")
+            await redis.delete(f"otp_attempts:{phone_number}")
+            await redis.delete(f"otp_cooldown:{phone_number}")
+
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error":True,
+                "detail":"Invalid or Expired OTP"
+            }
+        )
     user_id = UUID(data["user_id"])
     stmt = select(OTP).where(
         OTP.user_id == user_id,
@@ -64,5 +118,7 @@ async def  verified_otp(phone_number: str, input_otp: str, redis: Redis, db: Asy
         otp_request.status = OtpStatus.VERIFIED
     await db.commit()
     await redis.delete(f"otp:{phone_number}")
-
-    return True
+    await redis.delete(f"otp_attempts:{phone_number}")
+    await redis.delete(f"otp_cooldown:{phone_number}")
+    await redis.delete(f"otp_block:{phone_number}")
+    return user_id
