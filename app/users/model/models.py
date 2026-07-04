@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import UUID
 from app.utils.time_stamp_for_model import TimestampMixin
 from app.db.base import Base
-from app.auth.model.models import OTP
+from app.auth.model.models import OTP, RefreshToken
 
 
 class UserRole(str, enum.Enum):
@@ -24,3 +24,4 @@ class User(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=False)
     last_login: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     otps = relationship(OTP, back_populates="user")
+    refresh_tokens = relationship(RefreshToken, back_populates="user", cascade="all, delete-orphan",)
