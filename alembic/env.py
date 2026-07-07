@@ -4,6 +4,7 @@ from alembic import context
 from app.db.base import Base
 from app.users.model.models import User
 from app.auth.model.models import OTP
+from app.products.models.model import Product, Category
 from app.core.config import settings
 
 config = context.config
