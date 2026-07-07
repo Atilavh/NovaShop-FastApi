@@ -23,7 +23,7 @@ async def user_register(db: AsyncSession, request: UserRegisterSchema):
             detail="User already exists"
         )
 
-    new_user = User(phone_number=request.phone_number)
+    new_user = User(phone_number=request.phone_number, is_active=True)
 
     db.add(new_user)
     await db.commit()
