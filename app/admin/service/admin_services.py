@@ -16,7 +16,13 @@ class AdminProductManager:
     async def r_product(db: AsyncSession, prodcut_id):
         stmt = select(Product).where(Product.id == prodcut_id)
         result = await db.execute(stmt)
-        return result.scalar_one_or_none()
+        product = result.scalar_one_or_none()
+        if product is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Product not found",
+            )
+        return product
 
     @staticmethod
     async def c_product(
