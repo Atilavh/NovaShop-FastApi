@@ -8,7 +8,7 @@ from app.utils.time_stamp_for_model import TimestampMixin
 from app.db.base import Base
 from app.auth.model.models import OTP, RefreshToken
 from app.products.models.model import Product
-
+from app.cart.model.models import Cart
 
 class UserRole(str, enum.Enum):
     CUSTOMER = "customer"
@@ -27,3 +27,8 @@ class User(Base, TimestampMixin):
     otps = relationship(OTP, back_populates="user")
     refresh_tokens = relationship(RefreshToken, back_populates="user", cascade="all, delete-orphan")
     products = relationship(Product, back_populates="seller", cascade="all, delete-orphan")
+    cart = relationship(
+        Cart,
+        back_populates="user",
+        uselist=False
+    )
