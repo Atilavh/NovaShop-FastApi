@@ -23,7 +23,7 @@ async def user_register(db: AsyncSession, request: UserRegisterSchema):
             detail="User already exists"
         )
 
-    new_user = User(phone_number=request.phone_number)
+    new_user = User(phone_number=request.phone_number, is_active=True)
 
     db.add(new_user)
     await db.commit()
@@ -40,7 +40,7 @@ async def user_login(db: AsyncSession, request: UserLoginSchema):
     if not existing_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User already exists"
+            detail="User not exists"
         )
     
     existing_user.is_active = True
