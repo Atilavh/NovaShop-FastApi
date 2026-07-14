@@ -17,7 +17,7 @@ class Product(Base, TimestampMixin):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String, nullable=False)
-    slug: Mapped[str] = mapped_column(String(255), nullable=False)
+    slug: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     description: Mapped[str] = mapped_column(Text, nullable=True)
     price: Mapped[int] = mapped_column(Integer, nullable=False)
     stock: Mapped[int] = mapped_column(Integer, default=0)
@@ -27,7 +27,7 @@ class Product(Base, TimestampMixin):
     seller = relationship("User", back_populates="products")
     category_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("categories.id"),
-        nullable=False
+        nullable=True
     )
 
     category = relationship(
