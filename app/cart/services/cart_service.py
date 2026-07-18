@@ -192,13 +192,21 @@ class CartManager:
             }
         )
 
+    @staticmethod
+    async def get_cart_model(
+        db: AsyncSession,
+        current_user: User,
+    ) -> Cart | None:
 
+        stmt = (
+            select(Cart)
+            .options(
+                selectinload(Cart.items)
+                .selectinload(CartItem.product)
+            )
+            .where(Cart.user_id == current_user.id)
+        )
 
+        result = await db.execute(stmt)
 
-
-
-
-
-
-
-
+        return result.scalar_one_or_none()
