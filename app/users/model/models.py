@@ -9,7 +9,10 @@ from app.db.base import Base
 from app.auth.model.models import OTP, RefreshToken
 from app.products.models.model import Product
 from app.cart.model.models import Cart
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from app.orders.models.model import Order
 class UserRole(str, enum.Enum):
     CUSTOMER = "customer"
     SELLER = "seller"
@@ -31,4 +34,8 @@ class User(Base, TimestampMixin):
         Cart,
         back_populates="user",
         uselist=False
+    )
+    orders: Mapped[list["Order"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
     )
