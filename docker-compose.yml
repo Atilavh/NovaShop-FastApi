@@ -32,7 +32,21 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-
+  locust:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: novashop_locust
+    depends_on:
+      - backend
+    ports:
+      - "8089:8089"
+    command: >
+      locust
+      -f app/utils/locustfile.py
+      --host=http://backend:8000
+    volumes:
+      - .:/app
 volumes:
   postgres_data:
   redis_data:
